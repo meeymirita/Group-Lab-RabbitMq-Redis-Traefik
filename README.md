@@ -12,7 +12,7 @@
 
 ## Клонирование
 
-Репозиторий использует submodule'ы, поэтому клонировать нужно с флагом `--recurse-submodules`:
+Репозиторий использует submodule, поэтому клонировать нужно с флагом `--recurse-submodules`:
 
 ```bash
 git clone --recurse-submodules https://github.com/meeymirita/Group-Lab-RabbitMq-Redis-Traefik.git
