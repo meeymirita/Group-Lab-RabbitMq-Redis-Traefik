@@ -7,3 +7,6 @@
 [submodule "traefik"]
 	path = traefik
 	url = https://github.com/meeymirita/Traefik-Lab-laboratornaya--.git
+[submodule "php-coffee"]
+	path = php-coffee
+	url = https://github.com/meeymirita/Php-Coffee-Lab-laboratornaya--.git
