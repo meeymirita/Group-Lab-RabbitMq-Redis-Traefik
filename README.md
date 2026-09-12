@@ -1,21 +1,99 @@
-# Group Lab: RabbitMQ, Redis, Traefik
+# Group Lab: RabbitMQ, Redis, Traefik, OOP
 
-Сборный репозиторий с лабораторными работами. Каждая работа подключена как git submodule в отдельной папке. Репозиторий будет пополняться новыми работами.
+Сборный репозиторий с лабораторными работами. Каждая работа подключена как git submodule в отдельной папке и живёт в собственном репозитории — со своей историей коммитов, независимо от остальных. Репозиторий будет пополняться новыми работами.
 
 ## Работы
 
-| Папка | Описание | Репозиторий |
-|---|---|---|
-| [`rabbitmq`](rabbitmq) | Лабораторная по RabbitMQ (Docker Compose, Laravel-приложение) | [Rabbitmq-laboratornaya-](https://github.com/meeymirita/Rabbitmq-laboratornaya-) |
-| [`redis`](redis) | Лабораторная по Redis | [Redis-Lab-laboratornaya-](https://github.com/meeymirita/Redis-Lab-laboratornaya---) |
-| [`traefik`](traefik) | Лабораторная по Traefik | [Traefik-Lab-laboratornaya-](https://github.com/meeymirita/Traefik-Lab-laboratornaya--) |
+| Папка | Лаба | Статус | Репозиторий |
+|---|---|---|---|
+| [`rabbitmq`](rabbitmq) | RabbitMQ — Transactional Outbox, воркеры, DLQ | 🟡 в процессе (Session 2 / шаг 5.4) | [rabbitmq-lab](https://github.com/meeymirita/rabbitmq-lab) |
+| [`redis`](redis) | Redis — кэш, локи, rate limit, Streams | ⚪ не начата | [redis-lab](https://github.com/meeymirita/redis-lab) |
+| [`traefik`](traefik) | Traefik — reverse proxy, service discovery, TLS | ⚪ не начата | [traefik-lab](https://github.com/meeymirita/traefik-lab) |
+| [`php-coffee`](php-coffee) | OOP на PHP/Laravel — Coffee Shop API | ⚪ не начата | [oop-lab](https://github.com/meeymirita/oop-lab) |
+
+---
+
+## 1. RabbitMQ Lab (`rabbitmq/`)
+
+**О чём:** асинхронная обработка заказов интернет-магазина через очереди, с упором на паттерны надёжной доставки — то, что в реальных системах спасает от потери и дублирования сообщений.
+
+**Стек:** Laravel 13 (PHP 8.4) + PostgreSQL 16 + RabbitMQ (Management UI) + Mailpit, всё в Docker Compose.
+
+**Архитектура:** HTTP-запрос создаёт заказ и **сразу** пишет "записку" о событии в таблицу `outbox_messages` — в той же транзакции БД (паттерн **Transactional Outbox**, чтобы не потерять событие, если публикация в брокер упадёт). Отдельный процесс `outbox-relay` забирает записки и публикует их в exchange `orders.topic`. Дальше три независимых воркера (`order-worker`, `email-worker`, `analytics-worker`) разбирают свои копии сообщения из очередей: резервируют склад, шлют письмо, пишут в аналитику.
+
+**Что уже пройдено (сессия 1 — happy path и отказоустойчивость):**
+- Хопы 1–8: путь заказа от HTTP до БД, шаг за шагом, с точками наблюдения (`dd()`, логи, RabbitMQ UI)
+- Что происходит, когда не хватает товара на складе
+- **Идемпотентный consumer**: таблица `processed_messages` защищает от повторной обработки при redelivery
+- Competing consumers + **prefetch** (`basic_qos`) — честное распределение нагрузки vs эффект "воркера-заложника" при большом prefetch
+- Crash-тесты: `docker compose kill` (грубое убийство) и падение **после коммита, но до `ack`** — на практике поймали баг с `SIGKILL` на PID 1 в контейнере (ядро Linux его игнорирует), заменили на `exit()`
+- **Retry с TTL → DLX** для писем: `email.retry.1/2/3` (10с/30с/300с) → `email.dlx` → назад в `email.queue` или в `email.dlq` после исчерпания попыток
+- Читатель DLQ (`worker:failed-email`) — ручной разбор "мёртвых" сообщений
+- Сравнение с нативными Laravel Queue Jobs (`$tries`/`$backoff`/`failed_jobs`) на том же RabbitMQ — чтобы почувствовать, где ручной AMQP-слой даёт то, чего нет из коробки (идемпотентность, publisher confirms, чужие consumer'ы не на Laravel)
+
+**Дальше:** сессия 3 — priority queues и fanout (Pub/Sub) на `php-amqplib`.
+
+---
+
+## 2. Redis Lab (`redis/`)
+
+**О чём:** Redis как кэш, хранилище сессий, примитив синхронизации и брокер событий — одновременно, на кусочке той же системы заказов. Лаба специально показывает, где каждая из этих ролей "подводит" (что будет при рестарте без AOF, при отвале Pub/Sub-подписчика, при гонке за один и тот же лок).
+
+**Стек:** Laravel 13 + PostgreSQL 16 + Redis 7.
+
+**Формат:** методичка `Redis_Lab_Plan.html` (открывается в браузере, прогресс по чекбоксам сохраняется локально) — ещё не пройдена, ниже план по оглавлению.
+
+**Что внутри (3 сессии):**
+- **Сессия 1** — docker-compose и `redis.conf`, Laravel + `.env`, миграции; **Cache-Aside** для карточки товара (`ProductRepository`); сессии в Redis (`SESSION_DRIVER=redis`); `StreamPublisher` — первый producer в Redis Streams; первый consumer (happy path)
+- **Сессия 2** — **distributed lock** (`SET NX PX`) в `StockReservationService`, чтобы не продать один товар дважды; **rate limiter** (sliding window); competing consumers + нагрузочный тест; crash-тест на **PEL** (Pending Entries List) и идемпотентность
+- **Сессия 3** — retry через `XAUTOCLAIM`; ручной DLQ-поток; приоритет очереди через `ZSET`; Pub/Sub-дашборд в реальном времени; "Production Hell" — комплексный сценарий без подсказок
+
+Логика подачи материала зеркалит RabbitMQ-лабу (архитектура → сборка по шагам → "под капотом" → что почитать перед следующим шагом), но через призму структур данных Redis вместо AMQP.
+
+---
+
+## 3. Traefik Lab (`traefik/`)
+
+**О чём:** reverse proxy и service discovery для стека из нескольких сервисов — без ручной правки конфигов при каждом деплое, через Docker-labels.
+
+**Стек:** Traefik 3 + Docker Compose (с заметками про Podman) + Node.js API + статический frontend + PostgreSQL + Adminer.
+
+**Формат:** методичка `Traefik_Lab_Plan.html` — не пройдена, ниже план по оглавлению. Есть отдельный раздел 0 "Введение в Docker с нуля" для тех, кто раньше не работал с контейнерами.
+
+**Что внутри (3 сессии):**
+- **Сессия 1** — каталоги и `traefik/traefik.yml`; базовый `docker-compose.yml`; первый роутер через labels на тестовом сервисе `whoami`; dashboard Traefik и его защита; заметка про rootless Podman
+- **Сессия 2** — backend API; frontend с path-routing (`StripPrefix`); PostgreSQL + Adminer за прокси; масштабирование API + healthcheck; цепочка middlewares
+- **Сессия 3** — TLS через `mkcert` (локально) и Let's Encrypt (staging); canary-деплой (weighted round robin); "Production Hell" — финальный сценарий без подсказок
+
+Модель для понимания: `EntryPoint → Router → Middleware → Service` — весь курс выстроен вокруг этой цепочки.
+
+---
+
+## 4. OOP Lab (`php-coffee/`)
+
+**О чём:** объектно-ориентированное программирование на PHP 8.4 с нуля — не абстрактно, а на маленьком API кофейни. Отдельный, ни от чего не зависящий проект (в отличие от Redis/RabbitMQ-лаб не растёт из общей системы заказов).
+
+**Стек:** Laravel 13 (PHP 8.4) + PostgreSQL + RabbitMQ + Mailpit — брокер появляется только в последней сессии.
+
+**Формат:** методичка `OOP_Lab_CoffeeShop.html` — не пройдена, ниже план по оглавлению. Первая сессия начинается с чистого PHP без фреймворка, чтобы увидеть ООП "без магии Laravel".
+
+**Что внутри (5 сессий):**
+- **Сессия 1** — касса на массивах (и почему это плохо) → первый объект `Money` → `abstract class Drink` + `enum` + полиморфизм → заказ с инвариантами
+- **Сессия 2** — тесты для `Money`; иерархия напитков-наследников; фабрика `DrinkType` + `GET /api/menu`
+- **Сессия 3** — интерфейс `Beverage`; паттерн **Decorator** для добавок (сироп, шот и т.д.); сущность `Order` + `OrderStatus`; Repository + `POST /api/orders`
+- **Сессия 4** — `DiscountPolicy` + `Clock`; чекаут со стратегиями оплаты (`PaymentMethod`) + `/pay`; тесты на стратегиях; эксперимент "а если бы делали через наследование" (чтобы почувствовать разницу с композицией)
+- **Сессия 5** — `EventPublisher` + событие `order.paid`; воркеры (бариста + уведомления) на RabbitMQ — та же схема, что в RabbitMQ-лабе (один topic-exchange, две очереди); сквозной тест без БД и без брокера; финал "до/после"
+
+Проходит через: 4 принципа ООП, `abstract class` vs `interface`, наследование vs композиция, паттерны (Factory, Decorator, Strategy, Repository), SOLID — всё на одном сквозном примере.
+
+---
 
 ## Клонирование
 
 Репозиторий использует submodule, поэтому клонировать нужно с флагом `--recurse-submodules`:
 
 ```bash
-git clone --recurse-submodules https://github.com/meeymirita/Group-Lab-RabbitMq-Redis-Traefik.git
+git clone --recurse-submodules https://github.com/meeymirita/submodule-group-lab.git
 ```
 
 Если репозиторий уже склонирован без этого флага:
@@ -29,4 +107,14 @@ git submodule update --init --recursive
 ```bash
 git submodule add <url-репозитория-лабы> <папка>
 git commit -m "Add <название> lab"
+```
+
+## Обновление сабмодуля до последнего коммита
+
+```bash
+cd <папка-лабы>
+git pull origin main
+cd ..
+git add <папка-лабы>
+git commit -m "Update <папка-лабы> submodule"
 ```
