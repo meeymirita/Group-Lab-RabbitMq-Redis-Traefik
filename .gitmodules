@@ -1,12 +1,12 @@
 [submodule "rabbitmq"]
 	path = rabbitmq
-	url = https://github.com/meeymirita/Rabbitmq-laboratornaya-.git
+	url = https://github.com/meeymirita/rabbitmq-lab.git
 [submodule "redis"]
 	path = redis
-	url = https://github.com/meeymirita/Redis-Lab-laboratornaya---.git
+	url = https://github.com/meeymirita/redis-lab.git
 [submodule "traefik"]
 	path = traefik
-	url = https://github.com/meeymirita/Traefik-Lab-laboratornaya--.git
+	url = https://github.com/meeymirita/traefik-lab.git
 [submodule "php-coffee"]
 	path = php-coffee
-	url = https://github.com/meeymirita/Php-Coffee-Lab-laboratornaya--.git
+	url = https://github.com/meeymirita/oop-lab.git
