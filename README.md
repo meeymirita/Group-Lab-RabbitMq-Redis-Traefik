@@ -4,18 +4,20 @@
 
 ## Работы
 
-| Папка | Лаба | Статус | Репозиторий |
-|---|---|---|---|
-| [`rabbitmq`](rabbitmq) | RabbitMQ — Transactional Outbox, воркеры, DLQ | ✅ выполнена | [rabbitmq-lab](https://github.com/meeymirita/rabbitmq-lab) |
-| [`redis`](redis) | Redis — кэш, локи, rate limit, Streams | ⚪ не начата | [redis-lab](https://github.com/meeymirita/redis-lab) |
-| [`traefik`](traefik) | Traefik — reverse proxy, service discovery, TLS | ⚪ не начата | [traefik-lab](https://github.com/meeymirita/traefik-lab) |
-| [`php-coffee`](php-coffee) | OOP на PHP/Laravel — Coffee Shop API | ⚪ не начата | [oop-lab](https://github.com/meeymirita/oop-lab) |
-| [`vue`](vue) | Vue 3 — Helpdesk (Router, Pinia, WebSocket, тесты) | ⚪ не начата | [vue-lab](https://github.com/meeymirita/vue-lab) |
-| [`typescript`](typescript) | TypeScript 5 — Warehouse (generics, Zod, API + Vue) | ⚪ не начата | [typescript-lab](https://github.com/meeymirita/typescript-lab) |
+| Папка | Лаба | Статус | Сложность | Репозиторий |
+|---|---|---|---|---|
+| [`rabbitmq`](rabbitmq) | RabbitMQ — Transactional Outbox, воркеры, DLQ | ✅ выполнена | Высокая | [rabbitmq-lab](https://github.com/meeymirita/rabbitmq-lab) |
+| [`redis`](redis) | Redis — кэш, локи, rate limit, Streams | ⚪ не начата | Средняя | [redis-lab](https://github.com/meeymirita/redis-lab) |
+| [`traefik`](traefik) | Traefik — reverse proxy, service discovery, TLS | ⚪ не начата | Низкая–средняя | [traefik-lab](https://github.com/meeymirita/traefik-lab) |
+| [`php-coffee`](php-coffee) | OOP на PHP/Laravel — Coffee Shop API | ⚪ не начата | Базовая по материалу | [oop-lab](https://github.com/meeymirita/oop-lab) |
+| [`vue`](vue) | Vue 3 — Helpdesk (Router, Pinia, WebSocket, тесты) | ⚪ не начата | Высокая (новый стек) | [vue-lab](https://github.com/meeymirita/vue-lab) |
+| [`typescript`](typescript) | TypeScript 5 — Warehouse (generics, Zod, API + Vue) | ⚪ не начата | Высокая | [typescript-lab](https://github.com/meeymirita/typescript-lab) |
 
 ---
 
 ## 1. RabbitMQ Lab (`rabbitmq/`)
+
+> **Сложность: высокая.** Нужно перед стартом: уверенный Laravel/PHP (транзакции, Artisan-команды, очереди хотя бы на уровне концепции), базовые транзакции SQL, Docker Compose «запустить и посмотреть логи».
 
 **О чём:** асинхронная обработка заказов интернет-магазина через очереди, с упором на паттерны надёжной доставки — то, что в реальных системах спасает от потери и дублирования сообщений.
 
@@ -45,6 +47,8 @@
 
 ## 2. Redis Lab (`redis/`)
 
+> **Сложность: средняя.** Нужно перед стартом: то же, что для RabbitMQ-лабы (Laravel, Docker), домен заказов переиспользуется. Ниже порог входа, чем в RabbitMQ — но полезно уже пройти RabbitMQ, чтобы прочувствовать разницу между брокером и Redis-примитивами (Streams — не полноценная очередь).
+
 **О чём:** Redis как кэш, хранилище сессий, примитив синхронизации и брокер событий — одновременно, на кусочке той же системы заказов. Лаба специально показывает, где каждая из этих ролей "подводит" (что будет при рестарте без AOF, при отвале Pub/Sub-подписчика, при гонке за один и тот же лок).
 
 **Стек:** Laravel 13 + PostgreSQL 16 + Redis 7.
@@ -62,6 +66,8 @@
 
 ## 3. Traefik Lab (`traefik/`)
 
+> **Сложность: низкая–средняя** (инфраструктурная, не про код — backend/frontend уже даны готовыми). Нужно перед стартом: Docker Compose на уровне «поднять сервис и почитать логи»; для новичков в контейнерах есть отдельный вводный раздел 0.
+
 **О чём:** reverse proxy и service discovery для стека из нескольких сервисов — без ручной правки конфигов при каждом деплое, через Docker-labels.
 
 **Стек:** Traefik 3 + Docker Compose (с заметками про Podman) + Node.js API + статический frontend + PostgreSQL + Adminer.
@@ -78,6 +84,8 @@
 ---
 
 ## 4. OOP Lab (`php-coffee/`)
+
+> **Сложность: базовая по материалу** (нужен только синтаксис PHP, фреймворк — с сессии 5), но именно здесь стоит не спешить, если ООП пока даётся тяжело: это фундамент, который потом всплывает во всех остальных лабах.
 
 **О чём:** объектно-ориентированное программирование на PHP 8.4 с нуля — не абстрактно, а на маленьком API кофейни. Отдельный, ни от чего не зависящий проект (в отличие от Redis/RabbitMQ-лаб не растёт из общей системы заказов).
 
@@ -98,6 +106,8 @@
 
 ## 5. Vue Lab (`vue/`)
 
+> **Сложность: высокая, если фронтенд — новая территория.** Нужно перед стартом: уверенный JavaScript (ES6+, async/await, деструктуризация); опыт с Vue или другими фреймворками не требуется, бэкенд на NestJS дан готовым.
+
 **О чём:** Helpdesk (система тикетов) на Vue 3 с нуля — реактивность, компоненты, роутинг и общее состояние, каждое понятие на одном сквозном примере. Бэкенд (маленький NestJS-сервис) дан готовым в первой же сессии — писать его не нужно, только запустить.
 
 **Стек:** Vue 3.5 + Vite + Vue Router 4 + Pinia + Vitest, бэкенд — NestJS (TypeScript). Composition API + `<script setup>` (Options API — только в теории для сравнения). Всё в Docker.
@@ -116,6 +126,8 @@
 ---
 
 ## 6. TypeScript Lab (`typescript/`)
+
+> **Сложность: высокая** — абстрактное мышление на уровне типов (generics, conditional/mapped types) непривычно после динамического PHP. Нужно перед стартом: тот же JavaScript, что для Vue-лабы; логично проходить после или параллельно с ней (сессия 5 использует Vue).
 
 **О чём:** типизация домена складского учёта (Warehouse) с нуля — без фреймворков до последней сессии, чтобы увидеть TypeScript в чистом виде и потом узнавать его в Nest/Vue. Что типы реально ловят (перепутанные аргументы, `NaN` от строки вместо числа, `undefined` в рантайме), а что — нет.
 
