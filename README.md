@@ -6,7 +6,7 @@
 
 | Папка | Лаба | Статус | Репозиторий |
 |---|---|---|---|
-| [`rabbitmq`](rabbitmq) | RabbitMQ — Transactional Outbox, воркеры, DLQ | 🟡 в процессе (Session 2 / шаг 5.4) | [rabbitmq-lab](https://github.com/meeymirita/rabbitmq-lab) |
+| [`rabbitmq`](rabbitmq) | RabbitMQ — Transactional Outbox, воркеры, DLQ | ✅ выполнена | [rabbitmq-lab](https://github.com/meeymirita/rabbitmq-lab) |
 | [`redis`](redis) | Redis — кэш, локи, rate limit, Streams | ⚪ не начата | [redis-lab](https://github.com/meeymirita/redis-lab) |
 | [`traefik`](traefik) | Traefik — reverse proxy, service discovery, TLS | ⚪ не начата | [traefik-lab](https://github.com/meeymirita/traefik-lab) |
 | [`php-coffee`](php-coffee) | OOP на PHP/Laravel — Coffee Shop API | ⚪ не начата | [oop-lab](https://github.com/meeymirita/oop-lab) |
@@ -21,7 +21,7 @@
 
 **Архитектура:** HTTP-запрос создаёт заказ и **сразу** пишет "записку" о событии в таблицу `outbox_messages` — в той же транзакции БД (паттерн **Transactional Outbox**, чтобы не потерять событие, если публикация в брокер упадёт). Отдельный процесс `outbox-relay` забирает записки и публикует их в exchange `orders.topic`. Дальше три независимых воркера (`order-worker`, `email-worker`, `analytics-worker`) разбирают свои копии сообщения из очередей: резервируют склад, шлют письмо, пишут в аналитику.
 
-**Что уже пройдено (сессия 1 — happy path и отказоустойчивость):**
+**Что пройдено (все 3 сессии):**
 - Хопы 1–8: путь заказа от HTTP до БД, шаг за шагом, с точками наблюдения (`dd()`, логи, RabbitMQ UI)
 - Что происходит, когда не хватает товара на складе
 - **Идемпотентный consumer**: таблица `processed_messages` защищает от повторной обработки при redelivery
@@ -30,8 +30,14 @@
 - **Retry с TTL → DLX** для писем: `email.retry.1/2/3` (10с/30с/300с) → `email.dlx` → назад в `email.queue` или в `email.dlq` после исчерпания попыток
 - Читатель DLQ (`worker:failed-email`) — ручной разбор "мёртвых" сообщений
 - Сравнение с нативными Laravel Queue Jobs (`$tries`/`$backoff`/`failed_jobs`) на том же RabbitMQ — чтобы почувствовать, где ручной AMQP-слой даёт то, чего нет из коробки (идемпотентность, publisher confirms, чужие consumer'ы не на Laravel)
+- **Priority queues** (`x-max-priority`) с backlog — почему приоритет виден только при накопленной очереди
+- **Fanout** (`lab:broadcast` / `worker:broadcast`) — широковещание всем подписчикам через `system.broadcast`, в отличие от topic-маршрутизации остального проекта
 
-**Дальше:** сессия 3 — priority queues и fanout (Pub/Sub) на `php-amqplib`.
+**Пример выполнения — в самом репозитории `rabbitmq-lab` (сабмодуль `rabbitmq/`):**
+- рабочий код всех воркеров и команд — `laravel-app/app/Console/Commands/`
+- пошаговый разбор пути заказа (хопы, точки наблюдения, что смотреть в БД/UI/логах) — [`docs/order-path-explained.md`](https://github.com/meeymirita/rabbitmq-lab/blob/main/docs/order-path-explained.md)
+- ответы на все 18 вопросов для самопроверки, привязанные к коду проекта — [`docs/self-check-answers.md`](https://github.com/meeymirita/rabbitmq-lab/blob/main/docs/self-check-answers.md)
+- подборка справочных материалов по темам лабы — [`docs/rabbit.md`](https://github.com/meeymirita/rabbitmq-lab/blob/main/docs/rabbit.md)
 
 ---
 
