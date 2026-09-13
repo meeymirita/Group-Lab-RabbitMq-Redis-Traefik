@@ -10,3 +10,9 @@
 [submodule "php-coffee"]
 	path = php-coffee
 	url = https://github.com/meeymirita/oop-lab.git
+[submodule "vue"]
+	path = vue
+	url = https://github.com/meeymirita/vue-lab.git
+[submodule "typescript"]
+	path = typescript
+	url = https://github.com/meeymirita/typescript-lab.git

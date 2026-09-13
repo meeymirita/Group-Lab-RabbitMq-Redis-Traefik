@@ -1,4 +1,4 @@
-# Group Lab: RabbitMQ, Redis, Traefik, OOP
+# Group Lab: RabbitMQ, Redis, Traefik, OOP, Vue, TypeScript
 
 Сборный репозиторий с лабораторными работами. Каждая работа подключена как git submodule в отдельной папке и живёт в собственном репозитории — со своей историей коммитов, независимо от остальных. Репозиторий будет пополняться новыми работами.
 
@@ -10,6 +10,8 @@
 | [`redis`](redis) | Redis — кэш, локи, rate limit, Streams | ⚪ не начата | [redis-lab](https://github.com/meeymirita/redis-lab) |
 | [`traefik`](traefik) | Traefik — reverse proxy, service discovery, TLS | ⚪ не начата | [traefik-lab](https://github.com/meeymirita/traefik-lab) |
 | [`php-coffee`](php-coffee) | OOP на PHP/Laravel — Coffee Shop API | ⚪ не начата | [oop-lab](https://github.com/meeymirita/oop-lab) |
+| [`vue`](vue) | Vue.js | ⚪ не начата | [vue-lab](https://github.com/meeymirita/vue-lab) |
+| [`typescript`](typescript) | TypeScript | ⚪ не начата | [typescript-lab](https://github.com/meeymirita/typescript-lab) |
 
 ---
 
@@ -91,6 +93,18 @@
 - **Сессия 5** — `EventPublisher` + событие `order.paid`; воркеры (бариста + уведомления) на RabbitMQ — та же схема, что в RabbitMQ-лабе (один topic-exchange, две очереди); сквозной тест без БД и без брокера; финал "до/после"
 
 Проходит через: 4 принципа ООП, `abstract class` vs `interface`, наследование vs композиция, паттерны (Factory, Decorator, Strategy, Repository), SOLID — всё на одном сквозном примере.
+
+---
+
+## 5. Vue Lab (`vue/`)
+
+Репозиторий только что создан, план и код ещё не добавлены.
+
+---
+
+## 6. TypeScript Lab (`typescript/`)
+
+Репозиторий только что создан, план и код ещё не добавлены.
 
 ---
 
