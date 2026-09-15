@@ -16,3 +16,6 @@
 [submodule "typescript"]
 	path = typescript
 	url = https://github.com/meeymirita/typescript-lab.git
+[submodule "laravel"]
+	path = laravel
+	url = https://github.com/meeymirita/laravel-lab.git
